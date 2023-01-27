@@ -1,0 +1,31 @@
+{
+  "loader": {
+    "name": "java_plain",
+    "version": "1.0"
+  },
+  "license": "MIT",
+  "global": {
+    "version": "1.0.0",
+    "contributors": [
+      {
+        "name": "lvxinlei",
+        "description": "Lead Developer"
+      }
+    ],
+    "dependencies": [
+      {
+        "id": "spongeapi",
+        "version": "8.0.0"
+      }
+    ]
+  },
+  "plugins": [
+    {
+      "id": "midiplayer",
+      "version": "1.0.0",
+      "name": "MidiPlayer",
+      "entrypoint": "top.dsbbs2.mp.MidiPlayer",
+      "description": "Plays MIDI in the game"
+    }
+  ]
+}

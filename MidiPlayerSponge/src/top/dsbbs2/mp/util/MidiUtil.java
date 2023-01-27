@@ -2,17 +2,22 @@ package top.dsbbs2.mp.util;
 
 import javax.sound.midi.*;
 
-import org.spongepowered.api.effect.sound.SoundCategories;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
+import net.minecraft.core.Registry;
+import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
+import net.minecraft.network.protocol.game.ServerGamePacketListener;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.api.effect.sound.SoundType;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.entity.living.player.User;
-//import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
-
-//import top.dsbbs2.mp.MidiPlayer;
-
-//import top.dsbbs2.mp.MidiPlayer;
+import org.spongepowered.common.adventure.SpongeAdventure;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +39,7 @@ public class MidiUtil
         return MidiUtil.instruments[patch];
     }
     
-    public static SoundType patchToInstrument(final int patch) {
+    public static String patchToInstrument(final int patch) {
         return Instrument.fromByte(byteInstrument(patch)).getSound();
     }
     
@@ -107,34 +112,28 @@ public class MidiUtil
     
     public enum Instrument
     {
-        PIANO("PIANO", 0, 0, "BLOCK_NOTE_BLOCK_HARP", "BLOCK_NOTE_HARP", "NOTE_PIANO"), 
-        BASS("BASS", 1, 1, "BLOCK_NOTE_BLOCK_BASS", "BLOCK_NOTE_BASS", "NOTE_BASS"), 
-        SNARE_DRUM("SNARE_DRUM", 2, 2, "BLOCK_NOTE_BLOCK_SNARE", "BLOCK_NOTE_SNARE", "NOTE_SNARE_DRUM"), 
-        STICKS("STICKS", 3, 3, "BLOCK_NOTE_BLOCK_HAT", "BLOCK_NOTE_HAT", "NOTE_STICKS"), 
-        BASE_DRUM("BASE_DRUM", 4, 4, "BLOCK_NOTE_BLOCK_BASEDRUM", "BLOCK_NOTE_BASEDRUM", "NOTE_BASS_DRUM"), 
-        GUITAR("GUITAR", 5, 5, "BLOCK_NOTE_BLOCK_GUITAR", "BLOCK_NOTE_GUITAR", "NOTE_BASS_GUITAR"), 
-        BELL("BELL", 6, 6, "BLOCK_NOTE_BLOCK_BELL", "BLOCK_NOTE_BELL", "NOTE_PIANO"), 
-        CHIME("CHIME", 7, 7, "BLOCK_NOTE_BLOCK_CHIME", "BLOCK_NOTE_CHIME", "NOTE_PIANO"), 
-        FLUTE("FLUTE", 8, 8, "BLOCK_NOTE_BLOCK_FLUTE", "BLOCK_NOTE_FLUTE", "NOTE_PIANO"), 
-        XYLOPHONE("XYLOPHONE", 9, 9, "BLOCK_NOTE_BLOCK_XYLOPHONE", "BLOCK_NOTE_XYLOPHONE", "NOTE_STICKS"), 
-        PLING("PLING", 10, 10, "BLOCK_NOTE_BLOCK_PLING", "BLOCK_NOTE_PLING", "NOTE_PIANO"), 
-        BANJO("BANJO", 11, 11, "BLOCK_NOTE_BLOCK_BANJO", "BLOCK_NOTE_BLOCK_GUITAR", "BLOCK_NOTE_BASS_GUITAR"), 
-        BIT("BIT", 12, 12, "BLOCK_NOTE_BLOCK_BIT", "BLOCK_NOTE_BLOCK_PLING", "BLOCK_NOTE_PIANO"), 
-        COW_BELL("COW_BELL", 13, 13, "BLOCK_NOTE_BLOCK_COW_BELL", "BLOCK_NOTE_BLOCK_BELL", "BLOCK_NOTE_BELL"), 
-        DIDGERIDOO("DIDGERIDOO", 14, 14, "BLOCK_NOTE_BLOCK_DIDGERIDOO", "BLOCK_NOTE_BLOCK_BASS", "BLOCK_NOTE_BASS"), 
-        IRON_XYLOPHONE("IRON_XYLOPHONE", 15, 15, "BLOCK_NOTE_BLOCK_IRON_XYLOPHONE", "BLOCK_NOTE_BLOCK_XYLOPHONE", "BLOCK_NOTE_XYLOPHONE");
+        PIANO("PIANO", 0, 0, "minecraft:block.note_block.harp"),
+        BASS("BASS", 1, 1, "minecraft:block.note_block.bass"),
+        SNARE_DRUM("SNARE_DRUM", 2, 2, "minecraft:block.note_block.snare"),
+        STICKS("STICKS", 3, 3, "minecraft:block.note_block.hat"),
+        BASE_DRUM("BASE_DRUM", 4, 4, "minecraft:block.note_block.basedrum"),
+        GUITAR("GUITAR", 5, 5, "minecraft:block.note_block.guitar"),
+        BELL("BELL", 6, 6, "minecraft:block.note_block.bell"),
+        CHIME("CHIME", 7, 7, "minecraft:block.note_block.chime"),
+        FLUTE("FLUTE", 8, 8, "minecraft:block.note_block.flute"),
+        XYLOPHONE("XYLOPHONE", 9, 9, "minecraft:block.note_block.xylophone"),
+        PLING("PLING", 10, 10, "minecraft:block.note_block.pling"),
+        BANJO("BANJO", 11, 11, "minecraft:block.note_block.banjo"),
+        BIT("BIT", 12, 12, "minecraft:block.note_block.bit"),
+        COW_BELL("COW_BELL", 13, 13, "minecraft:block.note_block.cow_bell"),
+        DIDGERIDOO("DIDGERIDOO", 14, 14, "minecraft:block.note_block.didgeridoo"),
+        IRON_XYLOPHONE("IRON_XYLOPHONE", 15, 15, "minecraft:block.note_block.iron_xylophone");
         
         private final int pitch;
-        private SoundType sound;
+        private String sound;
         
-        private Instrument(final String s, final int n, final int pitch, final String sound, final String fallback, final String old) {
-            this.sound = MidiUtil.soundAttempt(sound, fallback);
-            if (sound == null) {
-                this.sound = MidiUtil.soundAttempt(old, fallback);
-            }
-            if (sound == null) {
-            	this.sound = SoundTypes.ENTITY_PLAYER_LEVELUP;
-            }
+        private Instrument(final String s, final int n, final int pitch, final String key) {
+            this.sound = key;
             this.pitch = pitch;
         }
         
@@ -191,7 +190,7 @@ public class MidiUtil
             }
         }
         
-        public SoundType getSound() {
+        public String getSound() {
             return this.sound;
         }
         
@@ -202,24 +201,28 @@ public class MidiUtil
     
     public interface PlaySoundAble
     {
-        void playSound(final SoundType p0, final float p1, final float p2);
+        void playSound(final String p0, final float p1, final float p2);
         
         static PlaySoundAble newPlaySoundAble(final User player) {
             return new PlaySoundAble() {
                 @Override
-                public void playSound(final SoundType var1, final float var2, final float var3) {
+                public void playSound(final String var1, final float var2, final float var3) {
                     if (player.isOnline()) {
-                        player.getPlayer().ifPresent(i->i.playSound(var1,SoundCategories.MASTER,player.getPosition(), var2, var3));
+                        //try {
+                            //player.player().ifPresent(i -> ((ServerGamePacketListener) (i.connection())).getConnection().send(new ClientboundSoundEntityPacket(new SoundEvent(new ResourceLocation(var1)), SoundSource.MASTER, (Entity) i, var2, var3)));
+                            player.player().ifPresent(i -> ((ServerGamePacketListener) (i.connection())).getConnection().send(new ClientboundCustomSoundPacket(new ResourceLocation(var1),SoundSource.MASTER,new Vec3(i.position().x(),i.position().y(),i.position().z()),var2,var3)));
+                        //System.out.println(true);
+                        //}catch (Throwable t){t.printStackTrace();}
                     }
                 }
             };
         }
         
-        static PlaySoundAble newPlaySoundAble(final Location<World> loc) {
+        static PlaySoundAble newPlaySoundAble(final Location loc) {
             return new PlaySoundAble() {
                 @Override
-                public void playSound(final SoundType var1, final float var2, final float var3) {
-                    loc.getExtent().playSound(var1,SoundCategories.MASTER,loc.getPosition(), var2, var3);
+                public void playSound(final String var1, final float var2, final float var3) {
+                    loc.world().playSound(Sound.sound(Key.key(var1), Sound.Source.MASTER,var2,var3),loc.position());
                 }
             };
         }
@@ -251,10 +254,10 @@ public class MidiUtil
                     case 144: {
                         final float volume = 10.0f * (message.getData2() / 127.0f);
                         final float pitch = this.getNote(this.toMCNote(message.getData1()));
-                        SoundType instrument = Instrument.PIANO.getSound();
+                        String instrument = Instrument.PIANO.getSound();
                         final Optional<Integer> optional = Optional.ofNullable(this.patches.get(message.getChannel()));
                         if (optional.isPresent()) {
-                            instrument = ((channel == 9) ? MidiUtil.patchToInstrument(optional.get()) : MidiUtil.patchToInstrument(optional.get()));
+                            instrument = MidiUtil.patchToInstrument(optional.get());
                         }
                         PlaySoundAble[] listeners;
                         for (int length = (listeners = this.listeners).length, i = 0; i < length; ++i) {

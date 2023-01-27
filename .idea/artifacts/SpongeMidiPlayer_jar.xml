@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="SpongeMidiPlayer:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/SpongeMidiPlayer_jar</output-path>
+    <root id="archive" name="SpongeMidiPlayer.jar">
+      <element id="module-output" name="SpongeMidiPlayer" />
+      <element id="dir-copy" path="$PROJECT_DIR$/MidiPlayerSponge/res" />
+    </root>
+  </artifact>
+</component>
